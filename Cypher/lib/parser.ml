@@ -90,7 +90,6 @@ let cint_p =
 
 let const_p = dquotes_cstr_p <|> squotes_cstr_p <|> cint_p
 let e_const = (fun c -> EConst c) <$> const_p
-(* let e_wildcard = (fun _ -> EWildcard) <$> wspaces_char '%' *)
 
 let e_get_prop =
   lift2
@@ -147,7 +146,6 @@ let e_p =
   let choice_p =
     e_const
     <|> parens e_p
-    (* <|> e_wildcard *)
     <|> e_as
     <|> e_get_type
     <|> e_not

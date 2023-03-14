@@ -39,8 +39,6 @@ type unary_op =
 (** Expression type *)
 type expr =
   | EConst of constant
-  (* % -- expression for the node label returns all the nodes that contain at least one label.*)
-  (* | EWildcard *)
   | EGetProp of string * string
   | EGetType of string
   | EGetElm of string

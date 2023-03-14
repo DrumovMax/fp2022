@@ -111,25 +111,6 @@ let find env var =
 (* A strange way to count the number of elements in a multi-data map *)
 let length map = List.length @@ List.concat @@ Map.Poly.data map
 
-(* let choice_all_nodes (env:env) = 
-  match env with
-  | (_, map) -> 
-    let list_elm = Map.Poly.data map in
-    List.fold_left
-    ~f:(fun acc elm_l -> 
-      let* valuelist = acc in
-      (List.fold_left
-      ~f:(fun acc elm -> 
-        let* valuelist = acc in
-        match elm with
-      | ((label, _), (None, None)) when Poly.( <> ) label [] -> return @@ VElm elm :: valuelist 
-      | _ -> fail EmptyInput)
-      ~init:(return valuelist)
-      elm_l))
-    ~init:(return [])
-    list_elm
-;; *)
-
 let find_value_props var var_props env =
   let* list_elm = return @@ Map.Poly.find_multi env var in
   if List.is_empty list_elm
@@ -314,7 +295,6 @@ let interpret_expr_where expr mvar mprops =
 let rec interpret_expr env = function
   | EConst (CString s) -> return [ cval @@ cvstr @@ s ]
   | EConst (CInt i) -> return [ cval @@ cvint @@ i ]
-  (* | EWildcard -> choice_all_nodes env  *)
   | EGetProp (var, var_props) -> find_value_props var var_props env
   | EGetType r -> find_type r env
   | EGetElm var -> find_elm var env
