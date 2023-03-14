@@ -1,3 +1,7 @@
+(** Copyright 2022-2023, Drumov and contributors *)
+
+(** SPDX-License-Identifier: LGPL-3.0-or-later *)
+
 open Cypher_lib.Parser
 open Cypher_lib.Interpret
 

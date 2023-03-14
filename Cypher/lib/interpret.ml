@@ -97,8 +97,7 @@ let extend_by_one var elm map = Map.Poly.add_multi map ~key:var ~data:elm
 
 let find env var =
   let list_elm = Map.Poly.find_multi env var in
-  let rec helper lst =
-    match lst with
+  let rec helper = function
     | [] -> None
     | h :: tl ->
       (match h with
