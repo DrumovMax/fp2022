@@ -148,8 +148,8 @@ let find_value_props var var_props env =
         match elm with
         | (_, props), (_, _) ->
           (match Stdlib.List.assoc_opt var_props props with
-           | Some value -> return @@ (cval value :: valuelist)
-           | None -> return @@ (cval (cvnull "null") :: valuelist)))
+           | Some value -> return (cval value :: valuelist)
+           | None -> return (cval (cvnull "null") :: valuelist)))
       ~init:(return [])
       list_elm
 ;;
@@ -166,11 +166,11 @@ let find_type var env =
         | (label, _), (Some _, Some _) ->
           (match label with
            | lbl :: _ -> return (cval (cvstr lbl) :: labellist)
-           | _ -> return @@ labellist)
+           | _ -> return labellist)
         | (_, _), (None, None) ->
           fail
           @@ TypeNotValid "Type is only available at the edges. Nodes are not supported."
-        | _ -> return @@ labellist)
+        | _ -> return labellist)
       ~init:(return [])
       list_elm
 ;;
@@ -193,7 +193,7 @@ let check_props var var_props mvar mprops =
   if Poly.( = ) var mvar
   then (
     match List.Assoc.find mprops ~equal:Poly.( = ) var_props with
-    | Some value -> return @@ value
+    | Some value -> return value
     | None -> return @@ cvnull "null")
   else fail UnstableElm
 ;;
@@ -707,7 +707,7 @@ let run_detach_delete g env vars =
                   return
                     ( LGraph.Edge.remove ((src, (None, None)), (dst, (None, None)), elm) g
                     , env )
-                | (_, _), (_, _) ->
+                | _ ->
                   List.fold_left
                     ~f:(fun acc node ->
                       let* g, env = acc in
