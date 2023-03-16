@@ -24,54 +24,40 @@
   n
   +-----------------------------+
   
-  "labels": {
-    "Movie",
-  },
-  "properties": {
-    "title": "The American President"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Rob Reiner"  }
   
-  "labels": {
-    "Movie",
-  },
-  "properties": {
-    "title": "Wall Street"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Oliver Stone"  }
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Charlie Sheen"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Michael Douglas"  }
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Martin Sheen"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Martin Sheen"  }
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Michael Douglas"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Charlie Sheen"  }
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Oliver Stone"
-   }
+  "labels": 
+  {  "Movie"  },
+  "properties": 
+  {  "title": "Wall Street"  }
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Rob Reiner"
-   }
+  "labels": 
+  {  "Movie"  },
+  "properties": 
+  {  "title": "The American President"  }
 
   $ ./tests.exe <<-"EOF"
   > CREATE (charlie:Person {name: 'Charlie Sheen'}),
@@ -98,8 +84,8 @@
   +-----------------------------+
   movie.title
   +-----------------------------+
-  "The American President"
   "Wall Street"
+  "The American President"
 
   $ ./tests.exe <<-"EOF"
   > CREATE (charlie:Person {name: 'Charlie Sheen'}),
@@ -181,10 +167,10 @@
   +-----------------------------+
   movie.name
   +-----------------------------+
-  "Charlie Sheen"
-  "Martin Sheen"
-  "Michael Douglas"
   "Oliver Stone"
+  "Michael Douglas"
+  "Martin Sheen"
+  "Charlie Sheen"
 
   $ ./tests.exe <<-"EOF"
   > CREATE (charlie:Person {name: 'Charlie Sheen'}),
@@ -265,9 +251,9 @@
   +-----------------------------+
   actor.name
   +-----------------------------+
-  "Charlie Sheen"
-  "Martin Sheen"
   "Michael Douglas"
+  "Martin Sheen"
+  "Charlie Sheen"
   $ ./tests.exe <<-"EOF"
   > CREATE (charlie:Person {name: 'Charlie Sheen'}),
   >  (martin:Person {name: 'Martin Sheen'}),
@@ -294,37 +280,29 @@
   a
   +-----------------------------+
   
-  "labels": {
-    "Movie",
-  },
-  "properties": {
-    "title": "Wall Street"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Charlie Sheen"  }
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Charlie Sheen"
-   }
+  "labels": 
+  {  "Movie"  },
+  "properties": 
+  {  "title": "Wall Street"  }
   
   +-----------------------------+
   b
   +-----------------------------+
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Charlie Sheen"
-   }
+  "labels": 
+  {  "Movie"  },
+  "properties": 
+  {  "title": "Wall Street"  }
   
-  "labels": {
-    "Movie",
-  },
-  "properties": {
-    "title": "Wall Street"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Charlie Sheen"  }
 
   $ ./tests.exe <<-"EOF"
   > CREATE (charlie:Person {name: 'Charlie Sheen'}),
@@ -351,9 +329,9 @@
   +-----------------------------+
   r.role
   +-----------------------------+
-  "Bud Fox"
-  "Carl Fox"
   "Gordon Gekko"
+  "Carl Fox"
+  "Bud Fox"
 
   $ ./tests.exe <<-"EOF"
   > CREATE (charlie:Person {name: 'Charlie Sheen'}),
@@ -411,15 +389,15 @@
   p
   +-----------------------------+
   
-  "type": "ACTED_IN",
-  "properties": {
-    "role": "President Andrew Shepherd"
-   }
+  "type": 
+  [  "ACTED_IN"  ],
+  "properties": 
+  {  "role": "Gordon Gekko"  }
   
-  "type": "ACTED_IN",
-  "properties": {
-    "role": "Gordon Gekko"
-   }
+  "type": 
+  [  "ACTED_IN"  ],
+  "properties": 
+  {  "role": "President Andrew Shepherd"  }
 
   $ ./tests.exe <<-"EOF"
   > CREATE (charlie:Person {name: 'Charlie Sheen'}),
@@ -487,12 +465,10 @@
   person
   +-----------------------------+
   
-  "labels": {
-    "Person",
-  },
-  "properties": {
-    "name": "Charlie Sheen"
-   }
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "name": "Charlie Sheen"  }
 
   $ ./tests.exe <<-"EOF"
   > CREATE
@@ -538,7 +514,9 @@
   >  (andy)-[:KNOWS {since: 1999}]->(peter);
   > MATCH (n:Person)
   > WHERE (n.age < 30 AND n.name = 'Timothy') OR NOT (n.name = 'Timothy' OR n.name = 'Peter')
-  > RETURN n.name AS name
+  > RETURN n.name AS name;
+  > MATCH (n)
+  > RETURN n AS Guys
   
   Nodes created: 3 
   Edges created: 2 
@@ -548,3 +526,28 @@
   +-----------------------------+
   "Timothy"
   "Andy"
+  
+  +-----------------------------+
+  Guys
+  +-----------------------------+
+  
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "age": 25,
+  "name": "Timothy"  }
+  
+  "labels": 
+  {  "Person"  },
+  "properties": 
+  {  "email": "peter_n@example.com",
+  "age": 35,
+  "name": "Peter"  }
+  
+  "labels": 
+  {  "Swedish",
+  "Person"  },
+  "properties": 
+  {  "belt": "white",
+  "age": 36,
+  "name": "Andy"  }
