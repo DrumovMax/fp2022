@@ -128,9 +128,6 @@ let find env var =
   helper list_elm
 ;;
 
-(* A strange way to count the number of elements in a multi-data map *)
-let length map = List.length @@ List.concat @@ Map.Poly.data map
-
 let length map =
   List.fold_left
     ~f:(fun acc lst ->
