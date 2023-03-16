@@ -31,10 +31,16 @@ and values =
   | VNull of string
 [@@deriving show { with_path = false }]
 
+(** Edges and Nodes have the same type.
+Node: (label, property), (None, None)
+Edge: (label, property), (Some src, Some dst) *)
 and elm = (vlabels * vprops) * (node_src_dst option * node_src_dst option)
 [@@deriving show { with_path = false }]
 
+(** src and dst are the node types of the source and destination edges:
+(label, property) *)
 and node_src_dst = vlabels * vprops [@@deriving show { with_path = false }]
+
 and vlabels = string list [@@deriving show { with_path = false }]
 and vprops = (string * values) list [@@deriving show { with_path = false }]
 
@@ -47,21 +53,32 @@ let pp_value fmt value =
   | VNull s -> fprintf fmt "%s\n" s
 ;;
 
-let pp_props fmt =
+let pp_props fmt labels =
   let open Format in
-  List.iter ~f:(function str, value -> fprintf fmt "  \"%s\": %a " str pp_value value)
+  let pp_label fmt = function
+    | str, value -> fprintf fmt "  %S: %a " str pp_value value
+  in
+  pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",\n") pp_label fmt labels
 ;;
 
 let pp_type fmt labels =
   let open Format in
-  List.iter ~f:(fun label -> fprintf fmt "\"%s\",\n" label) labels
+  let pp_type fmt label = fprintf fmt "%S" label in
+  fprintf
+    fmt
+    "[\n%a ]"
+    (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",\n") pp_type)
+    labels
 ;;
 
 let pp_labels fmt labels =
   let open Format in
-  fprintf fmt "{\n";
-  List.iter ~f:(fun label -> fprintf fmt "  \"%s\",\n" label) labels;
-  fprintf fmt "},\n"
+  let pp_label fmt label = fprintf fmt "%S" label in
+  fprintf
+    fmt
+    "{\n%a }"
+    (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",\n") pp_label)
+    labels
 ;;
 
 let cval v = Value v

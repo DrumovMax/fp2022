@@ -30,26 +30,27 @@ type binary_op =
 
 (** Unary operations type *)
 type unary_op =
-  | Not (** NOT *)
-  | KWNot (** ! *)
+  | Not (** ! *)
+  | KWNot (** NOT *)
   | IsNull (** NULL *)
   | IsNotNull (** NOT NULL *)
 [@@deriving show { with_path = false }]
 
 (** Expression type *)
 type expr =
-  | EConst of constant
-  | EGetProp of string * string
-  | EGetType of string
-  | EGetElm of string
-  | EGetAlias of string
-  | EBinop of binary_op * expr * expr
-  | EUnop of unary_op * expr
+  | EConst of constant (** An expression for the constata *)
+  | EGetProp of string * string (** An expression to get the properties *)
+  | EGetType of string (** An expression to get the type of an edge *)
+  | EGetElm of string (** An expression to get edges and nodes *)
+  | EGetAlias of string (** An expression to get the alias for the AS operation *)
+  | EBinop of binary_op * expr * expr (** An expression for binary operations *)
+  | EUnop of unary_op * expr (** An expression for unary operations*)
 [@@deriving show { with_path = false }]
 
 (** {name:"Ann"} *)
 type property = string * expr [@@deriving show { with_path = false }]
 
+(** [edge: ACTED_IN {role: 'President Andrew Shepherd'}] *)
 type direction = string option * string option * property list option
 [@@deriving show { with_path = false }]
 
