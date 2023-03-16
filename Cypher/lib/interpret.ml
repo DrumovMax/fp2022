@@ -45,38 +45,42 @@ and vlabels = string list [@@deriving show { with_path = false }]
 and vprops = (string * values) list [@@deriving show { with_path = false }]
 
 let pp_value fmt value =
-  let open Format in
+  let open Stdlib.Format in
   match value with
-  | VString s -> fprintf fmt "%S\n" s
-  | VInt n -> fprintf fmt "%d\n" n
-  | VBool b -> fprintf fmt "%b\n" b
-  | VNull s -> fprintf fmt "%s\n" s
+  | VString s -> fprintf fmt "%S" s
+  | VInt n -> fprintf fmt "%d" n
+  | VBool b -> fprintf fmt "%b" b
+  | VNull s -> fprintf fmt "%s" s
 ;;
 
 let pp_props fmt labels =
-  let open Format in
+  let open Stdlib.Format in
   let pp_label fmt = function
-    | str, value -> fprintf fmt "  %S: %a " str pp_value value
+    | str, value -> fprintf fmt "%S: %a" str pp_value value
   in
-  pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",\n") pp_label fmt labels
+  fprintf
+    fmt
+    "\n{  %a  }"
+    (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",\n") pp_label)
+    labels
 ;;
 
 let pp_type fmt labels =
-  let open Format in
+  let open Stdlib.Format in
   let pp_type fmt label = fprintf fmt "%S" label in
   fprintf
     fmt
-    "[\n%a ]"
+    "\n[  %a  ],"
     (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",\n") pp_type)
     labels
 ;;
 
 let pp_labels fmt labels =
-  let open Format in
+  let open Stdlib.Format in
   let pp_label fmt label = fprintf fmt "%S" label in
   fprintf
     fmt
-    "{\n%a }"
+    "\n{  %a  },"
     (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",\n") pp_label)
     labels
 ;;
@@ -119,13 +123,22 @@ let find env var =
     | h :: tl ->
       (match h with
        | (_, _), (None, None) -> Some h
-       | (_, _), (_, _) -> helper tl)
+       | _ -> helper tl)
   in
   helper list_elm
 ;;
 
 (* A strange way to count the number of elements in a multi-data map *)
 let length map = List.length @@ List.concat @@ Map.Poly.data map
+
+let length map =
+  List.fold_left
+    ~f:(fun acc lst ->
+      let* acc = acc in
+      return (acc + List.length lst))
+    ~init:(return 0)
+    (Map.Poly.data map)
+;;
 
 let find_value_props var var_props env =
   let* list_elm = return @@ Map.Poly.find_multi env var in
@@ -155,12 +168,12 @@ let find_type var env =
         match elm with
         | (label, _), (Some _, Some _) ->
           (match label with
-           | lbl :: _ -> return ((cval @@ cvstr lbl) :: labellist)
+           | lbl :: _ -> return (cval (cvstr lbl) :: labellist)
            | _ -> return @@ labellist)
         | (_, _), (None, None) ->
           fail
           @@ TypeNotValid "Type is only available at the edges. Nodes are not supported."
-        | (_, _), (_, _) -> return @@ labellist)
+        | _ -> return @@ labellist)
       ~init:(return [])
       list_elm
 ;;
@@ -174,7 +187,7 @@ let find_elm var env =
       ~f:(fun acc elm ->
         let* valuelist = acc in
         match elm with
-        | elm -> return @@ ((cvelm @@ elm) :: valuelist))
+        | elm -> return (cvelm elm :: valuelist))
       ~init:(return [])
       list_elm
 ;;
@@ -200,21 +213,21 @@ let rec interpret_expr_for_ret = function
     let* v2 = interpret_expr_for_ret e2 in
     let ret op = return @@ v1 ^ op ^ v2 in
     (match op with
-     | Add -> ret @@ "+"
-     | Sub -> ret @@ "-"
-     | Mul -> ret @@ "*"
-     | Div -> ret @@ "/"
-     | Eq -> ret @@ "="
-     | NEq -> ret @@ "<>"
-     | Less -> ret @@ "<"
-     | Gre -> ret @@ ">"
-     | LEq -> ret @@ "<="
-     | GEq -> ret @@ ">="
-     | And -> ret @@ " AND "
-     | Or -> ret @@ " OR "
-     | KWAnd -> ret @@ " && "
-     | KWOr -> ret @@ " || "
-     | Xor -> ret @@ " XOR "
+     | Add -> ret "+"
+     | Sub -> ret "-"
+     | Mul -> ret "*"
+     | Div -> ret "/"
+     | Eq -> ret "="
+     | NEq -> ret "<>"
+     | Less -> ret "<"
+     | Gre -> ret ">"
+     | LEq -> ret "<="
+     | GEq -> ret ">="
+     | And -> ret " && "
+     | Or -> ret " || "
+     | KWAnd -> ret " AND "
+     | KWOr -> ret " OR  "
+     | Xor -> ret " XOR "
      | As -> return v2)
   | EUnop (op, expr) ->
     let* elm = interpret_expr_for_ret expr in
@@ -237,9 +250,9 @@ let rec interpret_expr_where_r expr mvar mprops =
     let* v1 = interpret_expr_where_r e1 mvar mprops in
     let* v2 = interpret_expr_where_r e2 mvar mprops in
     (match op, v1, v2 with
-     | Add, VInt v1, VInt v2 -> return @@ cvint @@ (v1 + v2)
-     | Sub, VInt v1, VInt v2 -> return @@ cvint @@ (v1 - v2)
-     | Mul, VInt v1, VInt v2 -> return @@ cvint @@ (v1 * v2)
+     | Add, VInt v1, VInt v2 -> return @@ cvint (v1 + v2)
+     | Sub, VInt v1, VInt v2 -> return @@ cvint (v1 - v2)
+     | Mul, VInt v1, VInt v2 -> return @@ cvint (v1 * v2)
      | Div, VInt _, VInt v2 when v2 = 0 -> fail DivisionByZero
      | Div, VInt v1, VInt v2 -> return @@ cvint @@ (v1 / v2)
      | Eq, _, _ -> return @@ cvbool @@ Poly.( = ) v1 v2
@@ -256,14 +269,10 @@ let rec interpret_expr_where_r expr mvar mprops =
     let* expr = interpret_expr_where_r expr mvar mprops in
     (match op, expr with
      | KWNot, VBool expr | Not, VBool expr -> return @@ cvbool @@ not expr
-     | IsNotNull, expr ->
-       (match expr with
-        | VNull _ -> return @@ cvbool false
-        | _ -> return @@ cvbool true)
-     | IsNull, expr ->
-       (match expr with
-        | VNull _ -> return @@ cvbool true
-        | _ -> return @@ cvbool false)
+     | IsNotNull, VNull _ -> return @@ cvbool false
+     | IsNotNull, _ -> return @@ cvbool true
+     | IsNull, VNull _ -> return @@ cvbool true
+     | IsNull, _ -> return @@ cvbool false
      | _ -> fail IncorrectType)
 ;;
 
@@ -296,21 +305,17 @@ let interpret_expr_where expr mvar mprops =
     let* expr = interpret_expr_where_r expr mvar mprops in
     (match op, expr with
      | KWNot, VBool expr | Not, VBool expr -> return @@ not expr
-     | IsNotNull, expr ->
-       (match expr with
-        | VNull _ -> return false
-        | _ -> return true)
-     | IsNull, expr ->
-       (match expr with
-        | VNull _ -> return true
-        | _ -> return false)
+     | IsNotNull, VNull _ -> return false
+     | IsNotNull, _ -> return true
+     | IsNull, VNull _ -> return true
+     | IsNull, _ -> return false
      | _ -> fail IncorrectType)
   | _ -> fail IncorrectType
 ;;
 
 let rec interpret_expr env = function
-  | EConst (CString s) -> return [ cval @@ cvstr @@ s ]
-  | EConst (CInt i) -> return [ cval @@ cvint @@ i ]
+  | EConst (CString s) -> return [ cval @@ cvstr s ]
+  | EConst (CInt i) -> return [ cval @@ cvint i ]
   | EGetProp (var, var_props) -> find_value_props var var_props env
   | EGetType r -> find_type r env
   | EGetElm var -> find_elm var env
@@ -324,15 +329,15 @@ let rec interpret_expr env = function
         List.fold_left
           ~f:(fun acc v2 ->
             let* valuelist = acc in
-            let ret value = return @@ valuelist @ [ cval value ] in
+            let ret value = return (cval value :: valuelist) in
             match v1, v2 with
             | Value v1, Value v2 ->
               (match op, v1, v2 with
-               | Add, VInt v1, VInt v2 -> ret @@ cvint @@ (v1 + v2)
-               | Sub, VInt v1, VInt v2 -> ret @@ cvint @@ (v1 - v2)
-               | Mul, VInt v1, VInt v2 -> ret @@ cvint @@ (v1 * v2)
+               | Add, VInt v1, VInt v2 -> ret @@ cvint (v1 + v2)
+               | Sub, VInt v1, VInt v2 -> ret @@ cvint (v1 - v2)
+               | Mul, VInt v1, VInt v2 -> ret @@ cvint (v1 * v2)
                | Div, VInt _, VInt v2 when v2 = 0 -> fail DivisionByZero
-               | Div, VInt v1, VInt v2 -> ret @@ cvint @@ (v1 / v2)
+               | Div, VInt v1, VInt v2 -> ret @@ cvint (v1 / v2)
                | Eq, VInt v1, VInt v2 -> ret @@ cvbool @@ Poly.( = ) v1 v2
                | NEq, VInt v1, VInt v2 -> ret @@ cvbool @@ Poly.( <> ) v1 v2
                | Less, VInt v1, VInt v2 -> ret @@ cvbool @@ Poly.( < ) v1 v2
@@ -344,11 +349,11 @@ let rec interpret_expr env = function
                | KWOr, VBool v1, VBool v2 | Or, VBool v1, VBool v2 ->
                  ret @@ cvbool (v1 || v2)
                | Xor, VBool v1, VBool v2 -> ret @@ cvbool @@ Poly.( <> ) v1 v2
-               | As, value, _ -> return @@ valuelist @ [ cval value ]
+               | As, value, _ -> return (cval value :: valuelist)
                | _ -> fail IncorrectType)
             | value, _ ->
               (match op, value with
-               | As, value -> return @@ valuelist @ [ value ]
+               | As, value -> return (value :: valuelist)
                | _ -> fail IncorrectType))
           ~init:(return valuelist)
           vlist2)
@@ -359,17 +364,13 @@ let rec interpret_expr env = function
     List.fold_left
       ~f:(fun acc v ->
         let* valuelist = acc in
-        let ret value = return @@ valuelist @ [ cval value ] in
+        let ret value = return (cval value :: valuelist) in
         match op, v with
         | Not, Value (VBool v) | KWNot, Value (VBool v) -> ret @@ cvbool @@ not v
-        | IsNull, Value v ->
-          (match v with
-           | VNull _ -> ret v
-           | _ -> return valuelist)
-        | IsNotNull, Value v ->
-          (match v with
-           | VNull _ -> return valuelist
-           | _ -> ret v)
+        | IsNull, Value (VNull _) -> ret @@ cvnull "null"
+        | IsNull, _ -> return valuelist
+        | IsNotNull, Value (VNull _) -> return valuelist
+        | IsNotNull, Value v -> ret v
         | _ -> fail IncorrectType)
       ~init:(return [])
       vlist
@@ -379,10 +380,10 @@ let get_props env props =
   List.fold_left
     ~f:(fun acc (var, v) ->
       let* valuelist = interpret_expr env v in
-      match List.hd valuelist with
-      | None -> fail IncorrectProps
-      | Some value ->
-        (match value with
+      match valuelist with
+      | [] -> fail IncorrectProps
+      | h :: _ ->
+        (match h with
          | Value value ->
            let* lst = acc in
            return ((var, value) :: lst)
@@ -402,16 +403,16 @@ let save_node g env var vlabels vprops =
   return (graph, env, node)
 ;;
 
-let add_node g env var label = function
-  | Some props ->
+let add_node g env var label props =
+  match label, props with
+  | Some label, Some props ->
     let* vprops = get_props env props in
-    (match label with
-     | Some label -> save_node g env var label vprops
-     | None -> save_node g env var [] vprops)
-  | None ->
-    (match label with
-     | Some label -> save_node g env var label []
-     | None -> save_node g env var [] [])
+    save_node g env var label vprops
+  | None, Some props ->
+    let* vprops = get_props env props in
+    save_node g env var [] vprops
+  | Some label, None -> save_node g env var label []
+  | None, None -> save_node g env var [] []
 ;;
 
 let check_node g env = function
@@ -444,8 +445,7 @@ let save_edge g env var vlabels vprops n1 n2 =
     return (graph, env, edge)
 ;;
 
-let add_edge g env n1 n2 var label props =
-  match props with
+let add_edge g env n1 n2 var label = function
   | Some props ->
     let* vprops = get_props env props in
     save_edge g env var label vprops n1 n2
@@ -485,27 +485,23 @@ let run_create g env elms =
                  | Error error -> fail error)
               | None ->
                 fail @@ IncorrectCreate "To create an edge, you must specify a label.")
-           | EdgeData _ ->
+           | _ ->
              fail @@ IncorrectCreate "To create an edge, you must specify a direction."))
       ~init:(return (g, env))
       elms
   in
-  let open Format in
-  match num_elms with
-  | n, e ->
-    (match LGraph.number_of_nodes g - n, LGraph.number_of_edges g - e with
-     | nn, ne ->
-       if nn <> 0 then fprintf std_formatter "\nNodes created: %d \n" nn;
-       if ne <> 0 then fprintf std_formatter "Edges created: %d \n" ne);
-    return (g, env)
+  let open Stdlib.Format in
+  let n, e = num_elms in
+  let nn, ne = LGraph.number_of_nodes g - n, LGraph.number_of_edges g - e in
+  if nn <> 0 then printf "\nNodes created: %d \n" nn;
+  if ne <> 0 then printf "Edges created: %d \n" ne;
+  return (g, env)
 ;;
 
 let check_match_elm mprops props =
   if List.length mprops <= List.length props
   then
-    if List.for_all mprops ~f:(fun mprop -> List.mem props mprop ~equal:Poly.( = ))
-    then return true
-    else return false
+    return @@ List.for_all mprops ~f:(fun mprop -> List.mem props mprop ~equal:Poly.( = ))
   else return false
 ;;
 
@@ -520,55 +516,47 @@ let check_where_elm mprops props expr var =
 
 let find_elms_match env mprops mlabels = function
   | (labels, props), (_, _) ->
-    (match mlabels with
-     | Some mlabels ->
-       (match mprops with
-        | Some mprops ->
-          let* mprops = get_props env mprops in
-          if List.length mlabels <= List.length labels
-          then
-            if List.for_all mlabels ~f:(fun mlabel ->
-                 List.mem labels mlabel ~equal:Poly.( = ))
-            then check_match_elm mprops props
-            else return false
-          else return false
-        | None -> check_match_elm mlabels labels)
-     | None ->
-       (match mprops with
-        | Some mprops ->
-          let* mprops = get_props env mprops in
-          check_match_elm mprops props
-        | None -> return true))
+    (match mlabels, mprops with
+     | Some mlabels, Some mprops ->
+       let* mprops = get_props env mprops in
+       if List.length mlabels <= List.length labels
+       then
+         if List.for_all mlabels ~f:(fun mlabel ->
+              List.mem labels mlabel ~equal:Poly.( = ))
+         then check_match_elm mprops props
+         else return false
+       else return false
+     | Some mlabels, None -> check_match_elm mlabels labels
+     | None, Some mprops ->
+       let* mprops = get_props env mprops in
+       check_match_elm mprops props
+     | None, None -> return true)
 ;;
 
 let find_elms_m_where env var mlabels mprops expr = function
   | (labels, props), (_, _) ->
-    (match mlabels with
-     | Some mlabels ->
-       (match mprops with
-        | Some mprops ->
-          let* mprops = get_props env mprops in
-          if List.length mlabels <= List.length labels
-          then
-            if List.for_all mlabels ~f:(fun mlabel ->
-                 List.mem labels mlabel ~equal:Poly.( = ))
-            then check_where_elm mprops props expr var
-            else return false
-          else return false
-        | None ->
-          if List.length mlabels <= List.length labels
-          then
-            if List.for_all mlabels ~f:(fun mlabel ->
-                 List.mem labels mlabel ~equal:Poly.( = ))
-            then interpret_expr_where expr var props
-            else return false
-          else return false)
-     | None ->
-       (match mprops with
-        | Some mprops ->
-          let* mprops = get_props env mprops in
-          check_where_elm mprops props expr var
-        | None -> interpret_expr_where expr var props))
+    (match mlabels, mprops with
+     | Some mlabels, Some mprops ->
+       let* mprops = get_props env mprops in
+       if List.length mlabels <= List.length labels
+       then
+         if List.for_all mlabels ~f:(fun mlabel ->
+              List.mem labels mlabel ~equal:Poly.( = ))
+         then check_where_elm mprops props expr var
+         else return false
+       else return false
+     | Some mlabels, None ->
+       if List.length mlabels <= List.length labels
+       then
+         if List.for_all mlabels ~f:(fun mlabel ->
+              List.mem labels mlabel ~equal:Poly.( = ))
+         then interpret_expr_where expr var props
+         else return false
+       else return false
+     | None, Some mprops ->
+       let* mprops = get_props env mprops in
+       check_where_elm mprops props expr var
+     | None, None -> interpret_expr_where expr var props)
 ;;
 
 let find_elms env var mlabels mprops elm felms typeofelm = function
@@ -703,7 +691,8 @@ let find_edges g env cwm n1 e n2 =
 ;;
 
 let run_detach_delete g env vars =
-  if List.length vars <= length env
+  let* env_len = length env in
+  if List.length vars <= env_len
   then
     if List.for_all vars ~f:(fun var -> Map.Poly.mem env var)
     then (
@@ -742,20 +731,19 @@ let run_detach_delete g env vars =
           ~init:(return (g, env))
           vars
       in
-      let open Format in
-      match num_elms with
-      | n, e ->
-        (match n - LGraph.number_of_nodes g, e - LGraph.number_of_edges g with
-         | nn, ne ->
-           if nn <> 0 then fprintf std_formatter "\nNodes deleted: %d \n" nn;
-           if ne <> 0 then fprintf std_formatter "Edges deleted: %d \n" ne);
-        return (g, env))
+      let open Stdlib.Format in
+      let n, e = num_elms in
+      let nn, ne = n - LGraph.number_of_nodes g, e - LGraph.number_of_edges g in
+      if nn <> 0 then printf "\nNodes deleted: %d \n" nn;
+      if ne <> 0 then printf "Edges deleted: %d \n" ne;
+      return (g, env))
     else fail @@ UnboundValue "Undefined variable or nothing was found."
   else fail @@ UnboundValue "Undefined variable or nothing was found."
 ;;
 
 let run_delete g env vars =
-  if List.length vars <= length env
+  let* env_len = length env in
+  if List.length vars <= env_len
   then
     if List.for_all vars ~f:(fun var -> Map.Poly.mem env var)
     then (
@@ -788,14 +776,12 @@ let run_delete g env vars =
           ~init:(return (g, env))
           vars
       in
-      let open Format in
-      match num_elms with
-      | n, e ->
-        (match n - LGraph.number_of_nodes g, e - LGraph.number_of_edges g with
-         | nn, ne ->
-           if nn <> 0 then fprintf std_formatter "\nNodes deleted: %d \n" nn;
-           if ne <> 0 then fprintf std_formatter "Edges deleted: %d \n" ne);
-        return (g, env))
+      let open Stdlib.Format in
+      let n, e = num_elms in
+      let nn, ne = n - LGraph.number_of_nodes g, e - LGraph.number_of_edges g in
+      if nn <> 0 then printf "\nNodes deleted: %d \n" nn;
+      if ne <> 0 then printf "Edges deleted: %d \n" ne;
+      return (g, env))
     else fail @@ UnboundValue "Undefined variable or nothing was found."
   else fail @@ UnboundValue "Undefined variable or nothing was found."
 ;;
@@ -806,17 +792,16 @@ let run_return g env exprs =
       ~f:(fun acc expr ->
         let* returnlist = acc in
         let* valuelist = interpret_expr env expr in
-        return @@ returnlist @ [ expr, valuelist ])
+        return ((expr, List.rev valuelist) :: returnlist))
       ~init:(return [])
       exprs
   in
-  let open Format in
+  let open Stdlib.Format in
   List.fold_left
     ~f:(fun acc exprvalreturn ->
       let expr, valuereturn = exprvalreturn in
       let* expr = interpret_expr_for_ret expr in
-      fprintf
-        std_formatter
+      printf
         "\n+-----------------------------+\n%s\n+-----------------------------+\n%!"
         expr;
       let* graph, env = acc in
@@ -826,22 +811,16 @@ let run_return g env exprs =
           match elmret with
           | Value value ->
             pp_value std_formatter value;
+            printf "\n";
             return (g, env)
           | VElm elm ->
             (match elm with
              | (labels, props), (Some _, Some _) ->
-               fprintf
-                 std_formatter
-                 "\n\"type\": %a\"properties\": {\n%a}\n"
-                 pp_type
-                 labels
-                 pp_props
-                 props;
+               printf "\n\"type\": %a\n\"properties\": %a\n" pp_type labels pp_props props;
                return (g, env)
              | (labels, props), (_, _) ->
-               fprintf
-                 std_formatter
-                 "\n\"labels\": %a\"properties\": {\n%a}\n"
+               printf
+                 "\n\"labels\": %a\n\"properties\": %a\n"
                  pp_labels
                  labels
                  pp_props
@@ -850,7 +829,7 @@ let run_return g env exprs =
         ~init:(return (graph, env))
         valuereturn)
     ~init:(return (g, env))
-    returnlist
+    (List.rev returnlist)
 ;;
 
 let run_cmd env = function
@@ -865,16 +844,12 @@ let run_cmd env = function
         ~f:(fun acc elm ->
           let* g, env = acc in
           match elm with
-          | Node node_data ->
-            (match node_data with
-             | NodeData (var, labels, props) ->
-               (match var with
-                | Some var ->
-                  let* env, _ =
-                    find_nodes cmd_with_match g env var labels props Node_elm
-                  in
-                  return (g, env)
-                | None -> return (g, env)))
+          | Node (NodeData (var, labels, props)) ->
+            (match var with
+             | Some var ->
+               let* env, _ = find_nodes cmd_with_match g env var labels props Node_elm in
+               return (g, env)
+             | None -> return (g, env))
           | Edge (n1, e, n2) ->
             let* env, _ = find_edges g env cmd_with_match n1 e n2 in
             return (g, env))
