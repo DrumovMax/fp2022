@@ -551,3 +551,23 @@
   {  "belt": "white",
   "age": 36,
   "name": "Andy"  }
+
+  $ ./tests.exe <<-"EOF"
+  > CREATE
+  >  (andy:Swedish:Person {name: 'Andy', age: 36, belt: 'white'}),
+  >  (timothy:Person {name: 'Timothy', age: 25}),
+  >  (peter:Person {name: 'Peter', age: 35, email: 'peter_n@example.com'}),
+  >  (andy)-[:KNOWS {since: 2012}]->(timothy),
+  >  (andy)-[:KNOWS {since: 1999}]->(peter);
+  > MATCH (n:Person)-[]->(m)
+  > WHERE k.since = 2012 AND n.name = "Andy"
+  > RETURN m.name AS name
+  
+  Nodes created: 3 
+  Edges created: 2 
+  
+  +-----------------------------+
+  name
+  +-----------------------------+
+  "Timothy"
+  "Peter"
