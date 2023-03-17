@@ -19,30 +19,30 @@ type error =
   | TypeNotValid of string
 [@@deriving show { with_path = false }]
 
-type value =
-  | Value of values
-  | VElm of elm
-[@@deriving show { with_path = false }]
-
-and values =
+type values =
   | VString of string
   | VInt of int
   | VBool of bool
   | VNull of string
 [@@deriving show { with_path = false }]
 
-(** Edges and Nodes have the same type.
-Node: (label, property), (None, None)
-Edge: (label, property), (Some src, Some dst) *)
-and elm = (vlabels * vprops) * (node_src_dst option * node_src_dst option)
-[@@deriving show { with_path = false }]
+type vlabels = string list [@@deriving show { with_path = false }]
+type vprops = (string * values) list [@@deriving show { with_path = false }]
 
 (** src and dst are the node types of the source and destination edges:
 (label, property) *)
-and node_src_dst = vlabels * vprops [@@deriving show { with_path = false }]
+type node_src_dst = vlabels * vprops [@@deriving show { with_path = false }]
 
-and vlabels = string list [@@deriving show { with_path = false }]
-and vprops = (string * values) list [@@deriving show { with_path = false }]
+(** Edges and Nodes have the same type.
+Node: (label, property), (None, None)
+Edge: (label, property), (Some src, Some dst) *)
+type elm = (vlabels * vprops) * (node_src_dst option * node_src_dst option)
+[@@deriving show { with_path = false }]
+
+type value =
+  | Value of values
+  | VElm of elm
+[@@deriving show { with_path = false }]
 
 let pp_value fmt value =
   let open Stdlib.Format in
