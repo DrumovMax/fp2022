@@ -50,7 +50,8 @@ type expr =
 (** {name:"Ann"} *)
 type property = string * expr [@@deriving show { with_path = false }]
 
-(** [edge: ACTED_IN {role: 'President Andrew Shepherd'}] *)
+(**  (var, label, property)
+    [edge: ACTED_IN {role: 'President Andrew Shepherd'}] *)
 type direction = string option * string option * property list option
 [@@deriving show { with_path = false }]
 
@@ -60,10 +61,18 @@ type edge_direction =
   | UnDirect of direction
 [@@deriving show { with_path = false }]
 
-(** [edge : PARENT { role: "Father" }] *)
+(** (var, label, property)
+    var - element name(Used to name different parts in (n)--(m) queries. n and m are variables),
+    labels - similar to tags and allow you to specify certain types of entities to search for or create,
+    properties - name-value pairs that provide additional details to our nodes and relationships.
+    [edge : PARENT { role: "Father" }] *)
 type edge_data = EdgeData of edge_direction [@@deriving show { with_path = false }]
 
-(** (node : PERSON { name: "Ann" }) *)
+(** (var, label, property)
+    var - element name(Used to name different parts in (n)--(m) queries. n and m are variables),
+    labels - similar to tags and allow you to specify certain types of entities to search for or create,
+    properties - name-value pairs that provide additional details to our nodes and relationships.
+    (node : PERSON { name: "Ann" }) *)
 type node_data = NodeData of string option * string list option * property list option
 [@@deriving show { with_path = false }]
 

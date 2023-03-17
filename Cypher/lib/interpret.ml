@@ -30,7 +30,9 @@ type vlabels = string list [@@deriving show { with_path = false }]
 type vprops = (string * values) list [@@deriving show { with_path = false }]
 
 (** src and dst are the node types of the source and destination edges:
-(label, property) *)
+    (label, property) 
+    labels - similar to tags and allow you to specify certain types of entities to search for or create,
+    properties - name-value pairs that provide additional details to our nodes and relationships.*)
 type node_src_dst = vlabels * vprops [@@deriving show { with_path = false }]
 
 (** Edges and Nodes have the same type.
